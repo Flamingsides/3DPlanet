@@ -9,3 +9,8 @@ canvas{
 body{
     overflow: scroll;
 }
+
+#placeholder {
+    height: 500vh;
+    background-color: green;
+}
