@@ -14,3 +14,10 @@ body{
     height: 500vh;
     background-color: green;
 }
+
+#canvas-container {
+    overflow: auto;
+    width: 100%;
+    height: 100vh;
+    background-color: red;
+}

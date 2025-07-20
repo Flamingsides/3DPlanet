@@ -137,7 +137,7 @@ function getScrollT() {
     const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
 
     // Calculate 't' as a percentage (between 0 and 1)
-    return scrollY / Math.max(1, maxScroll);
+    return scrollY / Math.max(window.innerHeight, maxScroll);
 }
 
 const zoomSpeed = 0.0007; // Define the zoom out speed
@@ -171,7 +171,7 @@ function animate() {
         const positionIndex = Math.floor(t * numPoints);
         const position = points[positionIndex]; // Get the position at 't'
 
-        rocket.position.copy(position); // Update rocket's position
+        rocket.position.lerp(position, 0.1); // Update rocket's position
 
         // Make the rocket face the direction of motion
         const nextPoint = points[Math.min(positionIndex + 1, numPoints - 1)];
