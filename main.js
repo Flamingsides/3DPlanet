@@ -6,53 +6,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 /** Globals **/
 const radius = 30; // Define the radius of the circular path
 const numPoints = 100; // Number of points for the path
-var points = {};
+var points = [];
 
 // Ensure canvas readjusts to window size
 window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 })
-
-document.addEventListener('keydown', event => {
-    console.log(event);
-    keyDownHandler(event.key);
-});
-
-function keyDownHandler(key) {
-    if (!camera)
-        console.log('Camera object not initialised!');
-
-    switch (key) {
-        case 'w':
-            camera.position.y += 1;
-            // model.rotation.x += 0.01;
-            break;
-        case 's':
-            camera.position.y -= 1;
-            // model.rotation.x -= 0.01;
-            break;
-        case 'd':
-            camera.position.x += 1;
-            // model.rotation.y += 0.01;
-            break;
-        case 'a':
-            camera.position.x -= 1;
-            // model.rotation.y -= 0.01;
-            break;
-        case 'e':
-            camera.position.z += 1;
-            // model.rotation.z += 0.01;
-            break;
-        case 'q':
-            camera.position.z -= 1;
-            // model.rotation.z -= 0.01;
-            break;
-        default:
-            console.log('Non-specific Key Press');
-            break;
-    }
-    console.log(camera.position);
-}
 
 function getModelDimensions(model) {
     // Compute the bounding box to determine its height
@@ -76,79 +35,68 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 const dLight = new THREE.DirectionalLight(0xffffff, 1);
-scene.add(dLight);
 dLight.position.set(0, 10, 2);
+scene.add(dLight);
 
 // Add lighting to the scene
 const ambientLight = new THREE.AmbientLight(0xffffff, 1); // Soft white light
 scene.add(ambientLight);
 
-// Load the earth
-let model;
-// Load the rocket
-let rocket;
+const defaultOnLoad = (model, scene) => { scene.add(model); };
+const defaultOnErr = (path, err) => console.log("An error occured while loading " + path + ": " + err);
+
+async function loadModel(loader, path, scene, onLoad = defaultOnLoad, onErr = defaultOnErr) {
+    try {
+        const gltf = await loader.loadAsync(path);
+        const model = gltf.scene;
+        onLoad(model, scene);
+        return model;
+    } catch (err) {
+        onErr(path, err);
+    }
+
+}
+
 // Load the .glb model
 const loader = new GLTFLoader();
 
+const earthOnLoad = (earthModel, scene) => {
+    // Scale the model
+    console.log(earthModel);
+    earthModel.scale.set(5, 5, 5);
 
-loader.load(
-    './models/earth.glb',  // Ensure this path is correct
-    (gltf) => {
-        model = gltf.scene;
+    const dimensions = getModelDimensions(earthModel);
 
-        // Scale the model
-        model.scale.set(5, 5, 5);
+    // Set position to be below the ground
+    const belowGround = -dimensions.y / 2 - 3; // Subtract 1 or adjust as necessary
+    earthModel.position.set(0, belowGround, 0); // Adjust the Y position to below the ground
 
-        const dimensions = getModelDimensions(model);
+    scene.add(earthModel);
+    console.log('Earth model loaded successfully');
+}
+const earthModel = await loadModel(loader, './models/earth.glb', scene, earthOnLoad);
 
-        // Set position to be below the ground
-        const belowGround = -dimensions.y / 2 - 1; // Subtract 1 or adjust as necessary
-        model.position.set(0, belowGround, 0); // Adjust the Y position to below the ground
+const rocketOnLoad = (model, scene) => {
+    // Adjust scale based on your scene dimensions
+    model.scale.set(2, 2, 2); // Scale the rocket model
 
+    points = genRocketPathPoints(radius, numPoints, model);
+    const pathObject = createPathFromPoints(points, 0xFF0000);
+    scene.add(pathObject);
 
-        scene.add(model);
-        console.log('Model loaded successfully');
-    },
-    undefined,
-    (error) => {
-        console.error('An error happened while loading the model:', error);
-    }
-);
-
-
-loader.load(
-    //'./models/simple_rocket_ship_or_missile.glb', // Update with your rocket model path
-    "./models/rocket_rotated_180X.glb",
-    (gltf) => {
-        rocket = gltf.scene;
-
-        // Adjust scale based on your scene dimensions
-        rocket.scale.set(3, 3, 3); // Scale the rocket model
-
-        points = genRocketPathPoints(radius, numPoints);
-        const pathObject = createPathFromPoints(points, 0xFF0000);
-        scene.add(pathObject);
-
-        scene.add(rocket);
-    },
-    undefined,
-    (error) => {
-        console.error('An error happened while loading the model:', error);
-    }
-);
+    scene.add(model);
+}
+const rocketModel = await loadModel(loader, "./models/rocket_model.glb", scene, rocketOnLoad);
 
 // Grid view perspective
-const gridHelper = new THREE.GridHelper(200, 50);
-scene.add(gridHelper);
+// const gridHelper = new THREE.GridHelper(200, 50);
+// scene.add(gridHelper);
 
-// mouse controls
-const controls = new OrbitControls(camera, renderer.domElement);
-
-function genRocketPathPoints(radius, numPoints) {
+function genRocketPathPoints(radius, numPoints, rocketModel) {
     // Create a circular path on the x-z plane, with gradual downward movement on the y-axis
     const points = [];
     const z = 0; // y value is unchanging
-    const rocketYOffset = getModelDimensions(rocket).y / 2;
+    const rocketYOffset = getModelDimensions(rocketModel).y / 2 - 2;
     var xStretch = 1.5, zStretch = 4;
     for (let i = 0; i <= numPoints; i++) {
         const angle = (i / numPoints) * Math.PI * 2; // Angle for the circle
@@ -181,41 +129,42 @@ function getScrollT() {
 }
 
 const zoomSpeed = 0.0007; // Define the zoom out speed
-camera.position.set(0, -1, 35);
+camera.position.set(0, 2, 35);
+// controls.update();
 
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
 
     // Skip frames until model is loaded
-    if (!model)
+    if (!earthModel)
         return
 
-    // model.rotation.y += 0.001; // Step 4: Rotate the model if it's loaded
-    // model.rotation.x += 0.0001;
-    // model.rotation.z += 0.0001;
+    // earthModel.rotation.y += 0.001; // Step 4: Rotate the model if it's loaded
+    // earthModel.rotation.x += 0.0001;
+    // earthModel.rotation.z += 0.0001;
 
     const t = getScrollT(); // Get t based on scroll position
-    if (rocket) {
+    if (rocketModel) {
         // Find the rocket's position along the path based on scroll percentage 't'
         const positionIndex = Math.floor(t * numPoints);
         const position = points[positionIndex]; // Get the position at 't'
 
-        rocket.position.lerp(position, 0.1); // Update rocket's position
+        rocketModel.position.lerp(position, 0.1); // Update rocket's position
 
         // Make the rocket face the direction of motion
         const nextPoint = points[Math.min(positionIndex + 1, numPoints - 1)];
         const direction = new THREE.Vector3().subVectors(nextPoint, position).normalize();
-        rocket.lookAt(position.clone().add(direction)); // Make the rocket face forward
+        rocketModel.lookAt(position.clone().add(direction)); // Make the rocket face forward
     }
 
     // Zoom out effect based on scroll
     const zoomFactor = Math.max(1, 1 + (scrollY * zoomSpeed)); // Ensure it doesn't zoom in
-    // camera.position.set(0, 1 * zoomFactor, 35 * zoomFactor); // Adjust the camera position
-    //camera.position.set(0, 1, 35); 
+    camera.position.set(0, 1 * zoomFactor, 35 * zoomFactor); // Adjust the camera position
+    // camera.position.set(0, 1, 35); 
 
     camera.lookAt(camera.position.clone().setZ(0))
-    controls.update();
+    // controls.update();
     renderer.render(scene, camera);
 
 }
