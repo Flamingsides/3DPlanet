@@ -1,8 +1,6 @@
 import './style.css';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { reduceVertices } from 'three/examples/jsm/utils/SceneUtils.js';
 
 /** Globals **/
 const radius = 30; // Define the radius of the circular path
@@ -27,7 +25,8 @@ function getModelDimensions(model) {
 const scene = new THREE.Scene();
 scene.background = new THREE.Color().setHex(0x000000);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+// const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.OrthographicCamera(window.innerWidth / -32, window.innerWidth / 32, window.innerHeight / 32, window.innerHeight / -32, 1, 500);
 const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('#bg'),
     antialias: true,
@@ -63,7 +62,7 @@ const loader = new GLTFLoader();
 
 const rocketOnLoad = (model, scene) => {
     // Adjust scale based on your scene dimensions
-    model.scale.set(2, 2, 2); // Scale the rocket model
+    model.scale.set(0.75, 0.75, 0.75); // Scale the rocket model
 
     points = genRocketPathPoints(radius, numPoints, model);
     const pathObject = createPathFromPoints(points, 0xFF0000);
@@ -71,7 +70,7 @@ const rocketOnLoad = (model, scene) => {
 
     scene.add(model);
 }
-const rocketModel = await loadModel(loader, "./models/rocket_model.glb", scene, rocketOnLoad);
+const rocketModel = await loadModel(loader, "./models/rocket_model_dark.glb", scene, rocketOnLoad);
 
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 const earthTexture = new THREE.TextureLoader().load("images/earth-texture-4.png");
@@ -87,7 +86,7 @@ const earth = new THREE.Mesh(
 );
 earth.rotation.x += Math.PI / 16;
 earth.rotation.y -= Math.PI;
-// earth.position.y -= getModelDimensions(earth).y / 3;
+earth.position.y -= getModelDimensions(earth).y / 3;
 // earth.scale.set(1.5, 1.5, 1.5);
 scene.add(earth);
 
@@ -98,8 +97,8 @@ scene.add(earth);
 function genRocketPathPoints(radius, numPoints, rocketModel) {
     // Create a circular path on the x-z plane, with gradual downward movement on the y-axis
     const points = [];
-    const z = 0; // y value is unchanging
-    const rocketYOffset = getModelDimensions(rocketModel).y / 2 - 2;
+    const z = 0; // z value is unchanging
+    const rocketYOffset = getModelDimensions(rocketModel).y / 2 + 4;
     var xStretch = 1.5, zStretch = 4;
     for (let i = 0; i <= numPoints; i++) {
         const angle = (i / numPoints) * Math.PI * 2; // Angle for the circle
@@ -132,7 +131,7 @@ function getScrollT() {
 }
 
 const zoomSpeed = 0.0007; // Define the zoom out speed
-camera.position.set(0, 2, 35);
+camera.position.set(0, 2, 20);
 // controls.update();
 
 // Animation loop
@@ -155,6 +154,8 @@ function animate() {
         const position = points[positionIndex]; // Get the position at 't'
 
         rocketModel.position.lerp(position, 0.1); // Update rocket's position
+        const camPosUpdate = position.clone().setZ(camera.position.z);
+        camera.position.lerp(camPosUpdate, 0.1);
 
         // Make the rocket face the direction of motion
         const nextPoint = points[Math.min(positionIndex + 1, numPoints - 1)];
