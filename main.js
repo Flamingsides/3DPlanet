@@ -2,6 +2,7 @@ import './style.css';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { reduceVertices } from 'three/examples/jsm/utils/SceneUtils.js';
 
 /** Globals **/
 const radius = 30; // Define the radius of the circular path
@@ -24,7 +25,7 @@ function getModelDimensions(model) {
 
 // Initialize scene, camera, and renderer
 const scene = new THREE.Scene();
-scene.background = new THREE.Color().setHex(0x87CEEB);
+scene.background = new THREE.Color().setHex(0x000000);
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({
@@ -39,7 +40,7 @@ dLight.position.set(0, 10, 2);
 scene.add(dLight);
 
 // Add lighting to the scene
-const ambientLight = new THREE.AmbientLight(0xffffff, 1); // Soft white light
+const ambientLight = new THREE.AmbientLight(0xffffff, 2.5); // Soft white light
 scene.add(ambientLight);
 
 const defaultOnLoad = (model, scene) => { scene.add(model); };
@@ -60,22 +61,6 @@ async function loadModel(loader, path, scene, onLoad = defaultOnLoad, onErr = de
 // Load the .glb model
 const loader = new GLTFLoader();
 
-const earthOnLoad = (earthModel, scene) => {
-    // Scale the model
-    console.log(earthModel);
-    earthModel.scale.set(5, 5, 5);
-
-    const dimensions = getModelDimensions(earthModel);
-
-    // Set position to be below the ground
-    const belowGround = -dimensions.y / 2 - 3; // Subtract 1 or adjust as necessary
-    earthModel.position.set(0, belowGround, 0); // Adjust the Y position to below the ground
-
-    scene.add(earthModel);
-    console.log('Earth model loaded successfully');
-}
-const earthModel = await loadModel(loader, './models/earth.glb', scene, earthOnLoad);
-
 const rocketOnLoad = (model, scene) => {
     // Adjust scale based on your scene dimensions
     model.scale.set(2, 2, 2); // Scale the rocket model
@@ -87,6 +72,24 @@ const rocketOnLoad = (model, scene) => {
     scene.add(model);
 }
 const rocketModel = await loadModel(loader, "./models/rocket_model.glb", scene, rocketOnLoad);
+
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+const earthTexture = new THREE.TextureLoader().load("images/earth-texture-4.png");
+const earthNormal = new THREE.TextureLoader().load("images/earth-normal-map.tif");
+const earthSpecular = new THREE.TextureLoader().load("images/earth-specular-map-2k.tif");
+const earth = new THREE.Mesh(
+    new THREE.SphereGeometry(16),
+    new THREE.MeshPhongMaterial({
+        map: earthTexture,
+        normalMap: earthNormal,
+        specularMap: earthSpecular
+    })
+);
+earth.rotation.x += Math.PI / 16;
+earth.rotation.y -= Math.PI;
+// earth.position.y -= getModelDimensions(earth).y / 3;
+// earth.scale.set(1.5, 1.5, 1.5);
+scene.add(earth);
 
 // Grid view perspective
 // const gridHelper = new THREE.GridHelper(200, 50);
@@ -137,12 +140,13 @@ function animate() {
     requestAnimationFrame(animate);
 
     // Skip frames until model is loaded
-    if (!earthModel)
+    if (!earth)
         return
 
-    // earthModel.rotation.y += 0.001; // Step 4: Rotate the model if it's loaded
-    // earthModel.rotation.x += 0.0001;
-    // earthModel.rotation.z += 0.0001;
+    // Rotate loaded earth model
+    earth.rotation.y += 0.001;
+    // earth.rotation.x += 0.0005;
+    // earth.rotation.z += 0.0001;
 
     const t = getScrollT(); // Get t based on scroll position
     if (rocketModel) {
@@ -160,7 +164,7 @@ function animate() {
 
     // Zoom out effect based on scroll
     const zoomFactor = Math.max(1, 1 + (scrollY * zoomSpeed)); // Ensure it doesn't zoom in
-    camera.position.set(0, 1 * zoomFactor, 35 * zoomFactor); // Adjust the camera position
+    // camera.position.set(0, 1 * zoomFactor, 35 * zoomFactor); // Adjust the camera position
     // camera.position.set(0, 1, 35); 
 
     camera.lookAt(camera.position.clone().setZ(0))
