@@ -2,6 +2,8 @@ import './style.css';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
+import { getModelDimensions } from './helper';
+
 /** Globals **/
 const radius = 30; // Define the radius of the circular path
 const numPoints = 100; // Number of points for the path
@@ -12,20 +14,10 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 })
 
-function getModelDimensions(model) {
-    // Compute the bounding box to determine its height
-    const box = new THREE.Box3().setFromObject(model);
-    const dimensions = new THREE.Vector3();
-    box.getSize(dimensions);
-
-    return dimensions;
-}
-
 // Initialize scene, camera, and renderer
 const scene = new THREE.Scene();
 scene.background = new THREE.Color().setHex(0x000000);
 
-// const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const camera = new THREE.OrthographicCamera(window.innerWidth / -32, window.innerWidth / 32, window.innerHeight / 32, window.innerHeight / -32, 1, 500);
 const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('#bg'),
@@ -33,15 +25,13 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-
-const dLight = new THREE.DirectionalLight(0xffffff, 1);
-dLight.position.set(0, 10, 2);
-scene.add(dLight);
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
 
 // Add lighting to the scene
 const ambientLight = new THREE.AmbientLight(0xffffff, 2.5); // Soft white light
 scene.add(ambientLight);
 
+// Default functions for successful and erroneous loading of models
 const defaultOnLoad = (model, scene) => { scene.add(model); };
 const defaultOnErr = (path, err) => console.log("An error occured while loading " + path + ": " + err);
 
@@ -72,8 +62,7 @@ const rocketOnLoad = (model, scene) => {
 }
 const rocketModel = await loadModel(loader, "./models/rocket_model_dark.glb", scene, rocketOnLoad);
 
-renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-const earthTexture = new THREE.TextureLoader().load("images/earth-texture-4.png");
+const earthTexture = new THREE.TextureLoader().load("images/earth-texture-4.jpg");
 const earthNormal = new THREE.TextureLoader().load("images/earth-normal-map.tif");
 const earthSpecular = new THREE.TextureLoader().load("images/earth-specular-map-2k.tif");
 const earth = new THREE.Mesh(
@@ -84,11 +73,27 @@ const earth = new THREE.Mesh(
         specularMap: earthSpecular
     })
 );
+// Set initial position and rotation of the Earth
 earth.rotation.x += Math.PI / 16;
 earth.rotation.y -= Math.PI;
 earth.position.y -= getModelDimensions(earth).y / 3;
-// earth.scale.set(1.5, 1.5, 1.5);
+
 scene.add(earth);
+
+// Add green glow behind planet
+const glowMesh = new THREE.Mesh(
+    new THREE.CircleGeometry(27, 32),
+    new THREE.MeshBasicMaterial({
+        alphaMap: new THREE.TextureLoader().load("images/radial-gradient.jpg"),
+        color: 0x70D370,
+        transparent: true,
+        opacity: 0.3,
+        blending: THREE.AdditiveBlending
+    })
+);
+glowMesh.position.copy(earth.position).setZ(-30);
+scene.add(glowMesh);
+
 
 // Grid view perspective
 // const gridHelper = new THREE.GridHelper(200, 50);
