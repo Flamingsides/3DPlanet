@@ -48,6 +48,8 @@ const rocketOnLoad = (model, scene) => {
     // Generate an array of points along the rocket's path
     points = genRocketPathPoints(radius, numPoints, model);
 
+    model.position.clone(points[0]);
+
     // Convert to visible line mesh (REMOVABLE)
     const pathObject = createPathFromPoints(points, 0xFF0000);
     scene.add(pathObject);
@@ -109,9 +111,10 @@ function animate() {
 
     // If rocket model has been loaded
     if (rocketModel) {
-        // Find the rocket's position along the path based on scroll percentage 't'
+        // Find the rocket's next position along the path
+        // based on scroll percentage 't'
         const positionIndex = Math.floor(t * numPoints);
-        const position = points[positionIndex];
+        let position = points[positionIndex];
 
         // Update rocket's position gradually to new position
         rocketModel.position.lerp(position, 0.1);
