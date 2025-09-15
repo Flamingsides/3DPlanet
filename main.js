@@ -86,7 +86,7 @@ const glowMesh = new THREE.Mesh(
         alphaMap: new THREE.TextureLoader().load("images/radial-gradient.jpg"),
         color: 0x70D370,
         transparent: true,
-        opacity: 0.3,
+        opacity: 0.8,
         blending: THREE.AdditiveBlending
     })
 );
