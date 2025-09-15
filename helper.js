@@ -31,16 +31,16 @@ export function genRocketPathPoints(radius, numPoints, rocketModel) {
     const rocketYOffset = getModelDimensions(rocketModel).y / 2 + 4;
     var xStretch = 1.5, zStretch = 4;
     for (let i = 0; i <= numPoints; i++) {
-        const angle = (i / numPoints) * Math.PI; // Angle for the circle
+        const angle = (i / numPoints) * Math.PI * 2; // Angle for the circle
         const x = -radius * (Math.cos(angle) - 1) * xStretch; // X coordinate of the point on the circle (left-right)
         const y = radius * Math.sin(angle) * zStretch + rocketYOffset;; // Y coordinate of the point on the circle (up-down)
         points.push(new THREE.Vector3(x, y, z)); // Store each point on the path
     }
 
-    const lastPoint = points.pop();
+    // const lastPoint = points.pop();
 
-    for (let i = 0; i < numPoints; i++)
-        points.push(lastPoint.setY(lastPoint.y - i * 3));
+    // for (let i = 0; i < numPoints; i++)
+    //     points.push(lastPoint.setY(lastPoint.y - i * 3));
 
     return points;
 }
