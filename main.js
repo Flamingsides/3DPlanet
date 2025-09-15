@@ -53,8 +53,8 @@ const rocketOnLoad = (model, scene) => {
     model.position.clone(points[0]);
 
     // Convert to visible line mesh (REMOVABLE)
-    const pathObject = createPathFromPoints(points, 0xFF0000);
-    scene.add(pathObject);
+    // const pathObject = createPathFromPoints(points, 0xFF0000);
+    // scene.add(pathObject);
 
     // Add model to the scene
     scene.add(model);
