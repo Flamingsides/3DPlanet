@@ -31,11 +31,16 @@ export function genRocketPathPoints(radius, numPoints, rocketModel) {
     const rocketYOffset = getModelDimensions(rocketModel).y / 2 + 4;
     var xStretch = 1.5, zStretch = 4;
     for (let i = 0; i <= numPoints; i++) {
-        const angle = (i / numPoints) * Math.PI * 2; // Angle for the circle
+        const angle = (i / numPoints) * Math.PI; // Angle for the circle
         const x = -radius * (Math.cos(angle) - 1) * xStretch; // X coordinate of the point on the circle (left-right)
         const y = radius * Math.sin(angle) * zStretch + rocketYOffset;; // Y coordinate of the point on the circle (up-down)
         points.push(new THREE.Vector3(x, y, z)); // Store each point on the path
     }
+
+    const lastPoint = points.pop();
+
+    for (let i = 0; i < numPoints; i++)
+        points.push(lastPoint.setY(lastPoint.y - i * 3));
 
     return points;
 }
@@ -58,4 +63,34 @@ export function getScrollT() {
 
     // Calculate 't' as a percentage (between 0 and 1)
     return scrollY / Math.max(window.innerHeight, maxScroll);
+}
+
+var curScrollY = window.scrollY;
+function scroll(scrollSpeed, event) {
+    // Prevent default scroll behaviour
+    event.preventDefault()
+
+    const delta = Math.abs(window.scrollY - curScrollY);
+    curScrollY = window.scrollY;
+
+    var targetScrollY = curScrollY + (delta * scrollSpeed);
+    console.log(targetScrollY);
+
+    // Ensure scrolling remains within document bounds
+    targetScrollY = Math.max(0, targetScrollY);
+    targetScrollY = Math.min(targetScrollY, document.documentElement.scrollHeight);
+
+    window.scrollTo({
+        top: targetScrollY
+    });
+
+}
+
+export function customScrollLogic() {
+    const scrollSpeed = 0.1;
+
+    window.addEventListener("scroll", event => {
+        scroll(scrollSpeed, event);
+    }, { passive: false })
+
 }

@@ -2,7 +2,7 @@ import './style.css';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
-import { getModelDimensions, loadModel, genRocketPathPoints, createPathFromPoints, getScrollT } from './helper';
+import { getModelDimensions, loadModel, genRocketPathPoints, createPathFromPoints, getScrollT, customScrollLogic } from './helper';
 
 /** Globals **/
 const radius = 30; // Define the radius of the circular path
@@ -13,6 +13,8 @@ var points = [];
 window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 })
+
+// customScrollLogic();
 
 // Initialize scene, camera, and renderer
 const scene = new THREE.Scene();
